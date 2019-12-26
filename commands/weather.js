@@ -1,4 +1,4 @@
-const { Client, RichEmbed } = require("discord.js");
+const { RichEmbed } = require("discord.js");
 const request = require("request");
 const api_key = "c7df28fc5cf7daf5ad23b883b2513cef";
 

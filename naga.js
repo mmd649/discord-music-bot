@@ -1,8 +1,12 @@
 const   
-    Discord = require('discord.js'),
-    naga    = new Discord.Client(),
-    fs      = require('fs'),
-    config  = require(`./config.json`);
+    Discord     = require('discord.js'),
+    fs          = require('fs'),
+    config      = require(`./config.json`),
+    mongoose    = require('mongoose'),
+    naga        = new Discord.Client();
+
+mongoose.connect('mongodb://localhost:27017/naga', {useNewUrlParser: true, useUnifiedTopology: true});
+mongoose.set('useFindAndModify', false);
 
 //Set up command handler
 naga.commands = new Discord.Collection();
