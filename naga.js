@@ -39,7 +39,8 @@ naga.on('message', message => {
 });
 
 naga.once('ready', ()=>{
-   console.log('Naga is now online.');
+    naga.user.setActivity('Music .help');
+    console.log('Naga is now online.');
 });
 
 naga.login(config.bot_token);

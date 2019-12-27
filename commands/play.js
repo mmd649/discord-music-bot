@@ -1,5 +1,9 @@
 const { RichEmbed } = require("discord.js");
 const ytdl = require("ytdl-core");
+const ytsearch = require('youtube-search');
+const config = require('../config.json');
+const opts = { maxResults: 1, key: config.yt_api_key};
+
 const streamOptions = { seek: 0, volume: 1 };
 let servers = {};
 
@@ -28,6 +32,12 @@ module.exports = {
     //Check if the url provided is valid
     if (ytdl.validateURL(url)) {
       server.queue.push(url);
+    } else {
+      ytsearch(args[0], opts, (err, result) => {
+        if(err) return console.log(err);
+        let yt_url = result[0].link;
+        server.queue.push(yt_url);
+      });
     }
 
     //Check if the bot is connected to a voice channel
@@ -44,16 +54,18 @@ module.exports = {
     message -> The message channel
     connection -> The voice channel connection
  */
-async function playSong(server, message, connection) {
+function playSong(server, message, connection) {
 
-  await ytdl.getBasicInfo(server.queue[0], {}, (err, info) => {
-    message.channel.send(`:notes: **Now Playing** - ${info.title}`);
+  ytdl.getInfo(server.queue[0], {}, (err, info) => {
+    if(!err){
+      message.channel.send(`:notes: **Now Playing**  ${info.title}`);
+    }
   });
 
-  server.dispatcher = connection.playStream(ytdl(server.queue[0]), {
-    filter: "audioonly"
-  });
+  let stream = ytdl(server.queue[0], { filter: "audioonly" });
+  server.dispatcher = connection.playStream(stream, streamOptions);
   server.queue.shift();
+
   server.dispatcher.on("end", () => {
     if (server.queue[0]) {
       playSong(server, message, connection);
@@ -63,6 +75,55 @@ async function playSong(server, message, connection) {
   });
 }
 
+/*
+ */
+module.exports.playPlaylist = (message, playlist) => {
+
+  //Check if there is a server in the servers list
+  if (!servers[message.guild.id]) servers[message.guild.id] = { queue: [] };
+  
+  let server = servers[message.guild.id];
+
+  if (!message.member.voiceChannel)
+      return message.channel.send(
+        `<@${message.author.id}> Join a voice chanel first.`
+      );
+
+  server.queue = playlist;
+
+  message.member.voiceChannel.join().then(connection => {
+    playSong(server, message, connection);
+  });
+
+}
+
+/*
+ */
+module.exports.queue = async (message, args) => {
+  let server = servers[message.guild.id];
+
+  let queueEmbed = new RichEmbed()
+    .setColor("#3fb0ac")
+    .setTitle("Current queue");
+
+  message.channel.send(`<@${message.member.id}> Please wait as I get details about the queue.`);
+
+  if (server.queue.length > 0) {
+    for (let x = 0; x < server.queue.length; x++) {
+      const linkInfo = await ytdl.getBasicInfo(server.queue[x]);
+      queueEmbed.addField(
+        `${x === 0 ? "Next" : ":arrow_right:"}`,
+        linkInfo.title
+      );
+    }
+    message.channel.send(queueEmbed);
+  } else {
+    message.channel.send("There is no other song after the one playing.");
+  }
+};
+
+/*
+ */
 module.exports.skip = (message, args) => {
   let server = servers[message.guild.id];
   if (!server.dispatcher) return message.channel.send("No song to be skipped");
@@ -70,10 +131,15 @@ module.exports.skip = (message, args) => {
   message.channel.send(`:track_next: Song has been skipped as requested.`);
 };
 
+/*
+ */
 module.exports.stop = (message, args) => {
   let server = servers[message.guild.id];
-  if (!server.dispatcher) return message.channel.send("Naga is not playing any music right now.");
+  if (!server.dispatcher)
+    return message.channel.send("Naga is not playing any music right now.");
   server.queue = [];
   server.dispatcher.end();
-  message.channel.send(`:octagonal_sign: Music Player has been stopped. Queue has been cleared.`);
+  message.channel.send(
+    `:octagonal_sign: Music Player has been stopped. Queue has been cleared.`
+  );
 };
