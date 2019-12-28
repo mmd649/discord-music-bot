@@ -33,10 +33,11 @@ module.exports = {
     if (ytdl.validateURL(url)) {
       server.queue.push(url);
     } else {
-      ytsearch(args[0], opts, (err, result) => {
+      let songName = args.join(" ");
+      ytsearch(args.join(" "), opts, (err, result) => {
         if(err) return console.log(err);
-        let yt_url = result[0].link;
-        server.queue.push(yt_url);
+        let songUrl = result[0].link;
+        server.queue.push(songUrl);
       });
     }
 
@@ -106,7 +107,7 @@ module.exports.queue = async (message, args) => {
     .setColor("#3fb0ac")
     .setTitle("Current queue");
 
-  message.channel.send(`<@${message.member.id}> Please wait as I get details about the queue.`);
+  if(server.queue.length > 0) message.channel.send(`<@${message.member.id}> Please wait as I get details about the queue.`);
 
   if (server.queue.length > 0) {
     for (let x = 0; x < server.queue.length; x++) {

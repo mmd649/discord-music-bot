@@ -15,7 +15,7 @@ module.exports = {
 
         //if the song is not a yotube link, use the youtube api to search for the word provided and save the link of the first result.    
         } else {
-            ytsearch(args[1], opts, (err, song) => {
+            ytsearch(args.slice(1, args.length).join(" "), opts, (err, song) => {
                 if(err) return console.log(err);
                 addSong(message, args[0], song[0].link)
             });
@@ -55,7 +55,7 @@ function addSong(message, playlistName, url){
                                 console.log(err);
                             } else {
                                 //let user know that the song has been added to the playlist
-                                message.channel.send(`✅ ${songInfo.title} has been added to the playlist ${playlistName}`);
+                                message.channel.send(`✅ ${songInfo.title} has been added to the playlist **${playlistName}**`);
                             }
                         });
                     } else {
