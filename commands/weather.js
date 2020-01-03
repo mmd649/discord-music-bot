@@ -1,6 +1,6 @@
 const { RichEmbed } = require("discord.js");
 const request = require("request");
-const api_key = "c7df28fc5cf7daf5ad23b883b2513cef";
+const config = require("../config.json");
 
 module.exports = {
   name: "weather",
@@ -11,7 +11,7 @@ module.exports = {
 
     try {
       request.get(
-        `http://api.openweathermap.org/data/2.5/weather?q=${city},${country}&APPID=${api_key}`,
+        `http://api.openweathermap.org/data/2.5/weather?q=${city},${country}&APPID=${config.weather_api}`,
         (error, response, body) => {
           if (response.statusCode == 200) {
             let bodyJson = JSON.parse(body);
@@ -23,7 +23,10 @@ module.exports = {
               airHumidity = bodyJson.main.humidity;
 
             let messageEmbed = new RichEmbed()
-              .setAuthor(message.author.username, message.author.displayAvatarURL)
+              .setAuthor(
+                message.author.username,
+                message.author.displayAvatarURL
+              )
               .setTitle(
                 `The weather forecast for ${cityName} in ${countryName}`
               )
