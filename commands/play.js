@@ -1,10 +1,11 @@
 const { RichEmbed } = require("discord.js");
 const ytdl = require("ytdl-core");
-const ytsearch = require('youtube-search');
-const config = require('../config.json');
-const opts = { maxResults: 1, key: config.yt_api_key};
+const ytsearch = require("youtube-search");
+const config = require("../config.json");
+const opts = { maxResults: 2, key: config.yt_api_key };
 
-const streamOptions = { seek: 0, volume: 1 };
+const streamOptions = { seek: 0, volume: 2 };
+
 let servers = {};
 
 module.exports = {
@@ -33,18 +34,20 @@ module.exports = {
     if (ytdl.validateURL(url)) {
       server.queue.push(url);
     } else {
-      let songName = args.join(" ");
       ytsearch(args.join(" "), opts, (err, result) => {
-        if(err) return console.log(err);
-        let songUrl = result[0].link;
-        server.queue.push(songUrl);
-      });
-    }
+        if (err) return console.log(err);
 
-    //Check if the bot is connected to a voice channel
-    if (!message.guild.voiceConnection) {
-      message.member.voiceChannel.join().then(connection => {
-        playSong(server, message, connection);
+        if (ytdl.validateURL(result[0].link)) {
+          server.queue.push(result[0].link.toString());
+        } else {
+          server.queue.push(result[1].link.toString());
+        }
+        //Check if the bot is connected to a voice channel
+        if (!message.guild.voiceConnection) {
+          message.member.voiceChannel.join().then(connection => {
+            playSong(server, message, connection);
+          });
+        }
       });
     }
   }
@@ -55,16 +58,12 @@ module.exports = {
     message -> The message channel
     connection -> The voice channel connection
  */
-function playSong(server, message, connection) {
+async function playSong(server, message, connection) {
+  const song = await ytdl.getInfo(server.queue[0]);
+  message.channel.send(`:notes: **Now Playing**  ${song.title}`);
 
-  ytdl.getInfo(server.queue[0], {}, (err, info) => {
-    if(!err){
-      message.channel.send(`:notes: **Now Playing**  ${info.title}`);
-    }
-  });
-
-  let stream = ytdl(server.queue[0], { filter: "audioonly" });
-  server.dispatcher = connection.playStream(stream, streamOptions);
+  const stream = ytdl(server.queue[0], { filter: "audioonly" });
+  server.dispatcher = await connection.playStream(stream, streamOptions);
   server.queue.shift();
 
   server.dispatcher.on("end", () => {
@@ -79,24 +78,22 @@ function playSong(server, message, connection) {
 /*
  */
 module.exports.playPlaylist = (message, playlist) => {
-
   //Check if there is a server in the servers list
   if (!servers[message.guild.id]) servers[message.guild.id] = { queue: [] };
-  
+
   let server = servers[message.guild.id];
 
   if (!message.member.voiceChannel)
-      return message.channel.send(
-        `<@${message.author.id}> Join a voice chanel first.`
-      );
+    return message.channel.send(
+      `<@${message.author.id}> Join a voice chanel first.`
+    );
 
   server.queue = playlist;
 
   message.member.voiceChannel.join().then(connection => {
     playSong(server, message, connection);
   });
-
-}
+};
 
 /*
  */
@@ -107,7 +104,10 @@ module.exports.queue = async (message, args) => {
     .setColor("#3fb0ac")
     .setTitle("Current queue");
 
-  if(server.queue.length > 0) message.channel.send(`<@${message.member.id}> Please wait as I get details about the queue.`);
+  if (server.queue.length > 0)
+    message.channel.send(
+      `<@${message.member.id}> Please wait as I get details about the queue.`
+    );
 
   if (server.queue.length > 0) {
     for (let x = 0; x < server.queue.length; x++) {
