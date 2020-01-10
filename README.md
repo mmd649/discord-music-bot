@@ -3,6 +3,10 @@ Naga is a music bot developed using discord.js which is a powerful node.js modul
 
 ---
 ## Setup
+
+### Requirements
+MongodDB is required for this project. If you do not have it installed. It is available [here](https://www.mongodb.com/download-center/community).
+
 To setup the bot, all you need to do is create a config.json and run 'npm install' to install the dependencies.
 ```
 {
