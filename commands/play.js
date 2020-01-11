@@ -27,7 +27,8 @@ module.exports = {
       );
 
     //Check if there is a server in the servers list
-    if (!servers[message.guild.id]) servers[message.guild.id] = { queue: [] };
+    if (!servers[message.guild.id])
+      servers[message.guild.id] = { queue: [], playing: true };
     let server = servers[message.guild.id];
 
     //Check if the url provided is valid
@@ -70,12 +71,14 @@ async function playSong(server, message, connection) {
     if (server.queue[0]) {
       playSong(server, message, connection);
     } else {
+      server.playing = false;
       connection.disconnect();
     }
   });
 }
 
 /*
+  Play a playlist.
  */
 module.exports.playPlaylist = (message, playlist) => {
   //Check if there is a server in the servers list
@@ -96,6 +99,7 @@ module.exports.playPlaylist = (message, playlist) => {
 };
 
 /*
+  Display the current music queue.
  */
 module.exports.queue = async (message, args) => {
   let server = servers[message.guild.id];
@@ -124,6 +128,31 @@ module.exports.queue = async (message, args) => {
 };
 
 /*
+  Pause the current song playing.
+*/
+module.exports.pause = (message, args) => {
+  let server = servers[message.guild.id];
+  if (server.playing) {
+    server.playing = false;
+    server.dispatcher.pause();
+    message.channel.send(`current song has been paused.`);
+  }
+};
+
+/*
+  Resume the paused song.
+*/
+module.exports.resume = (message, args) => {
+  let server = servers[message.guild.id];
+  if (server.playing === false) {
+    server.playing = true;
+    server.dispatcher.resume();
+    message.channel.send(`Current song has been resumed.`);
+  }
+};
+
+/*
+  Skip the current song playing.
  */
 module.exports.skip = (message, args) => {
   let server = servers[message.guild.id];
@@ -133,6 +162,7 @@ module.exports.skip = (message, args) => {
 };
 
 /*
+  Stop the bot. Clears the song queue in the process.
  */
 module.exports.stop = (message, args) => {
   let server = servers[message.guild.id];
